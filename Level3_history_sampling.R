@@ -1,10 +1,12 @@
 library("ggplot2")
+
+# Read a csv file with a history of monthly asset values from latest to oldest, and calculate the monthly.returns
 history <- read.csv("Downloads/s_and_p_equal_weight.csv")
 history <- history[nrow(history):1,]
-Sim.years <- 35
-N.years <- 5
 monthly.returns <- history$Price[-1]/history$Price[-length(history$Price)]
 
+# function to construct a sequence of annual returns of length N.years from an actual interval in history present in 
+# monthly.returns
 select_interval_of_annual_returns <- function(N.years,monthly.returns){
   # first pick a random starting date at least N.years prior to end of monthly.returns dataset
   N.months <- length(monthly.returns)
@@ -23,9 +25,14 @@ select_interval_of_annual_returns <- function(N.years,monthly.returns){
   ann.returns
 }
 
+Sim.years <- 35
+N.years <- 5
 d <- 1
+
 for (lifetime in 1:100){
   ann.returns <- select_interval_of_annual_returns(N.years,monthly.returns)
+  # Cycle through the selection of N.years consecutive historical annual returns until obtaining Sim.years
+  # annual returns. 
   while(length(ann.returns)<Sim.years){
     ann.returns <- c(ann.returns,select_interval_of_annual_returns(N.years,monthly.returns))
   }
@@ -87,10 +94,26 @@ for (lifetime in 1:100){
   else d <- current.life
 }
 
-ggplot(d, aes(x=dt, y=tot_bal_end, color=lifetime))+geom_point(size=1)
+ggplot(d, aes(x=dt, y=tot_bal_end, color=lifetime))+geom_point(size=1)+
+  scale_y_continuous(limits=c(-2000000,20000000),labels = scales::dollar_format())+
+  labs(x="Years into Retirement",y="Total Balance",title="Applying Level3 Strategy",subtitle="Dollar Balance Over Time")
+# scale_y_continuous(labels = scales::dollar_format(scale = .001, suffix = "K"))
 
+year=10
 plot_ecdf <- function(year){
-  dist <- d[d$dt==year,]$tot_bal_end
-  plot(ecdf(dist))
+  dist <- d[d$dt==year,]
+  left_censored <- lapply(dist$tot_bal_end, function(x) max(x,-5000000))
+  dist$boundedbalance <- as.numeric(lapply(left_censored, function(x) min(x,30000000)))
+  ggplot(dist,aes(boundedbalance)) + stat_ecdf(geom = "step")+
+    labs(subtitle="Applying Level3 Strategy",
+         y = "F(Balance)", x="Dollar Balance")+
+    scale_x_continuous(limits=c(-5000000,30000000),breaks = scales::pretty_breaks(n = 10), labels = scales::dollar_format(scale = .000001, suffix = "M"))+
+    theme_classic()+
+    geom_hline(yintercept = c(0.02,0.05))+
+    geom_vline(xintercept=0)+
+    ggtitle( paste( "Empirical Cumulative Distribution of Balance after", year, "years") )
 }
+plot_ecdf(5)
 plot_ecdf(10)
+plot_ecdf(20)
+plot_ecdf(30)
