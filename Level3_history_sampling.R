@@ -1,7 +1,7 @@
 library("ggplot2")
 set.seed(1)
 # Read a csv file with a history of monthly asset values from latest to oldest, and calculate the monthly.returns
-history <- read.csv("Downloads/s_and_p_equal_weight.csv")
+history <- read.csv("level3/gitpulltesting/s_and_p_equal_weight.csv")
 history <- history[nrow(history):1,]
 monthly.returns <- history$Price[-1]/history$Price[-length(history$Price)]
 

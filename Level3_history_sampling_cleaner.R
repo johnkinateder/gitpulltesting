@@ -1,5 +1,5 @@
 library("ggplot2")
-
+set.seed(1)
 # Read a csv file with a history of monthly asset values from latest to oldest, and calculate the monthly.returns
 history <- read.csv("Downloads/s_and_p_equal_weight.csv")
 history <- history[nrow(history):1,]
@@ -68,13 +68,20 @@ for (lifetime in 1:100){
   e_bal_year_beginning[1] <- equity_init
   s_bal_year_beginning[1] <- safe_init
   for (year in 1:(Sim.years-1)){
+    print(year)
     four.years.cash <- sum(annual_spend[year+0:3]) # Take sum of current year spend plus next 3
     half.safe.deficit <- 0.5*max(0,four.years.cash - s_bal_year_beginning[year])
     if (equity_index_year_beginning[year]>0.95*equity_index_max){
       e_bal_year_beginning[year] <- e_bal_year_beginning[year]-annual_spend[year]-half.safe.deficit
       s_bal_year_beginning[year] <- s_bal_year_beginning[year]+half.safe.deficit
     } else {
-      s_bal_year_beginning[year] <- s_bal_year_beginning[year]-annual_spend[year]
+      print("checking whether s_bal_year_beginning[year]>annual_spend[year]")
+      if (s_bal_year_beginning[year]>annual_spend[year]){
+        s_bal_year_beginning[year] <- s_bal_year_beginning[year]-annual_spend[year]
+      } else{
+        e_bal_year_beginning[year] <- e_bal_year_beginning[year]- annual_spend[year]-s_bal_year_beginning[year]
+        s_bal_year_beginning[year] <- 0
+      }
     }
     e_bal_year_ending[year] <- e_bal_year_beginning[year]*(1+equity_return[year])
     s_bal_year_ending[year] <- s_bal_year_beginning[year]*(1+safe_return[year])
